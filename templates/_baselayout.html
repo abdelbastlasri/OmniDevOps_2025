@@ -1,0 +1,47 @@
+{{if ispage}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DMVCFramework - TemplatePro and HTMX</title>
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.21/dist/css/uikit.min.css" />
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.6.21/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.6.21/dist/js/uikit-icons.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4" crossorigin="anonymous"></script>
+    <style>
+        li.htmx-swapping {
+            opacity: 0;
+            transition: opacity 1s ease-out;
+        }
+    </style>
+    {{block "extraheaders"}}{{endblock}}
+</head>
+
+<body class="uk-background-secondary" uk-height-viewport>
+    <div class="uk-navbar-container" uk-navbar>
+        <div class="uk-navbar-center">
+            <a href="" class="uk-navbar-item uk-logo">DMVCFramework - TemplatePro - HTMX</a>
+        </div>
+    </div>
+    <div class="uk-container uk-flex uk-flex-center">
+        {{endif}}
+        {{block "body"}}{{endblock}}
+        {{if ispage}}
+    </div>
+
+    <script>
+        htmx.on('htmx:afterSwap', function (event) {
+            document.getElementById("contentInput").value = ""
+        });
+    </script>
+    <div style="text-align: center">{{:version}}</div>
+</body>
+
+</html>
+{{endif}}

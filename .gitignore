@@ -1,0 +1,6 @@
+# Delphi / RAD Studio artifacts
+*.dcu
+*.~*
+*.identcache
+_bin/
+obj/
