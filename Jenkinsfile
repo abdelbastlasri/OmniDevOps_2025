@@ -1,29 +1,50 @@
-node {
-    stage('SCM') {
+pipeline {
+  agent any
+  environment {
+    PROJECT_KEY = 'OmniDevOps_2025'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
         checkout scm
+      }
     }
+    stage('Build') {
+      steps {
+        bat 'msbuild OmniDevOps_2025.sln /t:Rebuild'
+      }
+    }
+    stage('SonarQube Analysis') {
+      steps {
+        script {
+          def scannerHome = tool name: 'SonarScanner for MSBuild', type: 'hudson.plugins.sonar.MsBuildSQRunnerInstallation'
+          withSonarQubeEnv('sonardelphi') {
+            bat """
+\"${scannerHome}\\SonarScanner.MSBuild.exe\" begin ^
+  /k:\"${env.PROJECT_KEY}\" ^
+  /d:sonar.host.url=%SONAR_HOST_URL% ^
+  /d:sonar.login=%SONAR_AUTH_TOKEN%
 
-    stage('SonarQube Pre‑Analysis') {
-        // Récupère l'installation du scanner que vous avez nommé "SonarScanner for MSBuild"
-        def scannerHome = tool 'SonarScanner for MSBuild'
+msbuild YourSolution.sln /t:Rebuild
 
-        // Injecte SONAR_HOST_URL et SONAR_AUTH_TOKEN depuis la config "sonardelphi"
-        withSonarQubeEnv('sonardelphi') {
-            bat "\"${scannerHome}\\SonarScanner.MSBuild.exe\" begin " +
-                "/k:\"OmniDevOps_2025\" " +
-                "/d:sonar.host.url=%SONAR_HOST_URL% " +
-                "/d:sonar.login=%SONAR_AUTH_TOKEN%"
+\"${scannerHome}\\SonarScanner.MSBuild.exe\" end ^
+  /d:sonar.login=%SONAR_AUTH_TOKEN%
+"""
+          }
         }
+      }
     }
-
-    stage('Build .NET Solution') {
-        // Adaptez le chemin/nom de votre solution ou projet MSBuild ici
-        bat 'msbuild YourSolution.sln /t:Rebuild'
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
     }
-
-    stage('SonarQube Post‑Analysis') {
-        def scannerHome = tool 'SonarScanner for MSBuild'
-        bat "\"${scannerHome}\\SonarScanner.MSBuild.exe\" end " +
-            "/d:sonar.login=%SONAR_AUTH_TOKEN%"
+  }
+  post {
+    always {
+      echo "Build finished with status: ${currentBuild.currentResult}"
     }
-}  // <-- Fermeture du bloc node
+  }
+}
