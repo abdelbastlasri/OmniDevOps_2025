@@ -1,50 +1,28 @@
-pipeline {
-  agent any
-  environment {
-    PROJECT_KEY = 'OmniDevOps_2025'
-  }
-  stages {
+node {
+    def msbuildHome = tool 'My_MSBuild'
+    def scannerHome = tool 'SonarScanner for MSBuild'
+
     stage('Checkout') {
-      steps {
         checkout scm
-      }
     }
+
+    stage('SonarQube Pre‑Analysis') {
+        withSonarQubeEnv('sonardelphi') {
+            bat "\"${scannerHome}\\SonarScanner.MSBuild.exe\" begin /k:\"OmniDevOps_2025\" /d:sonar.host.url=%SONAR_HOST_URL% /d:sonar.login=%SONAR_AUTH_TOKEN%"
+        }
+    }
+
     stage('Build') {
-      steps {
-        bat 'msbuild OmniDevOps_2025.sln /t:Rebuild'
-      }
+        bat "\"${msbuildHome}\\MSBuild.exe\" \"${env.WORKSPACE}\\OmniDevOps_2025.sln\" /t:Rebuild /p:Configuration=Release"
     }
-    stage('SonarQube Analysis') {
-      steps {
-        script {
-          def scannerHome = tool name: 'SonarScanner for MSBuild', type: 'hudson.plugins.sonar.MsBuildSQRunnerInstallation'
-          withSonarQubeEnv('sonardelphi') {
-            bat """
-\"${scannerHome}\\SonarScanner.MSBuild.exe\" begin ^
-  /k:\"${env.PROJECT_KEY}\" ^
-  /d:sonar.host.url=%SONAR_HOST_URL% ^
-  /d:sonar.login=%SONAR_AUTH_TOKEN%
 
-msbuild YourSolution.sln /t:Rebuild
-
-\"${scannerHome}\\SonarScanner.MSBuild.exe\" end ^
-  /d:sonar.login=%SONAR_AUTH_TOKEN%
-"""
-          }
-        }
-      }
+    stage('SonarQube Post‑Analysis') {
+        bat "\"${scannerHome}\\SonarScanner.MSBuild.exe\" end /d:sonar.login=%SONAR_AUTH_TOKEN%"
     }
+
     stage('Quality Gate') {
-      steps {
         timeout(time: 5, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
+            waitForQualityGate abortPipeline: true
         }
-      }
     }
-  }
-  post {
-    always {
-      echo "Build finished with status: ${currentBuild.currentResult}"
-    }
-  }
 }
