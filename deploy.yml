@@ -1,0 +1,21 @@
+- name: Déployer ToDoList sur Minikube
+hosts: local
+connection: local
+gather_facts: no
+tasks:
+- name: Pull image Docker
+command: docker pull localhost:5000/todolist:latest
+register: pull_output
+- name: Apply K8s manifests
+command: kubectl apply -f kubernetes/
+register: k8s_output
+- name: Wait deployment ready
+command: kubectl rollout status deployment/todolist-app --timeout=2m
+register: rollout_output
+- name: Afficher l'URL Minikube
+command: minikube service todolist-app-service --url
+register: url_output
+changed_when: false
+- name: Show application URL
+debug:
+msg: "App URL → {{ url_output.stdout }}"
