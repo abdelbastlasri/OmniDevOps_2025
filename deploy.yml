@@ -4,7 +4,7 @@ connection: local
 gather_facts: no
 tasks:
 - name: Pull image Docker
-command: docker pull localhost:5000/todolist:latest
+command: docker pull localhost:8090/todolist:latest
 register: pull_output
 - name: Apply K8s manifests
 command: kubectl apply -f kubernetes/
